@@ -1,3 +1,10 @@
+- 0.4
+    - Define the `Data` instances of `InsOrdHashMap` and `InsOrdHashSet` via
+      `fromList`/`toList`. The derived instances exposed the internal
+      insertion stamps, so generic traversals could reorder a container
+      or break its invariants.
+      https://github.com/erikd/insert-ordered-containers/issues/19
+
 - 0.3.0.1
     - Fix quadratic behavior in traverseWithKey/for
 

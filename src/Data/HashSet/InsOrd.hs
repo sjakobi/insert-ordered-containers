@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -41,12 +40,14 @@ module Data.HashSet.InsOrd (
     )where
 
 import Prelude
-       (Bool, Eq ((==)), Int, const, flip, fmap, fst, id, otherwise, return,
-       snd, ($), (&&), (+), (.), (<$>), (<), (>), (>=), (||))
+       (Bool, Eq ((==)), Int, const, error, flip, fmap, fst, id, otherwise,
+       return, snd, ($), (&&), (+), (.), (<$>), (<), (>), (>=), (||))
 
 import Control.Arrow                   (first)
 import Control.DeepSeq                 (NFData (..))
-import Data.Data                       (Data)
+import Data.Data
+       (Constr, Data (..), DataType, Fixity (Prefix), constrIndex, gcast1,
+       mkConstr, mkDataType)
 import Data.Foldable                   (Foldable (foldMap), all)
 import Data.Hashable                   (Hashable (..))
 import Data.List                       (nub, sortBy)
@@ -85,7 +86,25 @@ data InsOrdHashSet k = InsOrdHashSet
     { _getIndex        :: !Int
     , getInsOrdHashSet :: !(HashMap k Int)
     }
-    deriving (Data)
+
+-- | Presents the set as @fromList [k]@ in insertion order. The internal
+-- insertion stamps are never exposed, so generic transformations cannot
+-- break ordering or 'valid'.
+instance (Data k, Eq k, Hashable k) => Data (InsOrdHashSet k) where
+    gfoldl f z m   = z fromList `f` toList m
+    toConstr _     = fromListConstr
+    gunfold k z c  = case constrIndex c of
+        1 -> k (z fromList)
+        _ -> error "gunfold"
+    dataTypeOf _   = insOrdHashSetDataType
+    dataCast1 f    = gcast1 f
+
+fromListConstr :: Constr
+fromListConstr = mkConstr insOrdHashSetDataType "fromList" [] Prefix
+
+insOrdHashSetDataType :: DataType
+insOrdHashSetDataType =
+    mkDataType "Data.HashSet.InsOrd.InsOrdHashSet" [fromListConstr]
 
 -- | @since 0.2.5
 instance NFData k => NFData (InsOrdHashSet k) where
